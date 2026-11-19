@@ -2,4 +2,13 @@
 gatherUsageStats = false
 
 [theme]
+base = "light"
+primaryColor = "#375dbe"
+backgroundColor = "#f3f6fc"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#172744"
 font = "sans serif"
+
+[theme.sidebar]
+backgroundColor = "#e7eefb"
+secondaryBackgroundColor = "#ffffff"

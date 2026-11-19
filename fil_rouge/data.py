@@ -11,6 +11,18 @@ from pathlib import Path
 import pandas as pd
 
 DATA = Path(__file__).resolve().parents[1] / "data" / "echecs"
+RESULTATS = {"win": "victoire", "draw": "nulle", "lose": "défaite"}
+SCORES = {"victoire": 1.0, "nulle": 0.5, "défaite": 0.0}
+COLONNES_NUMERIQUES = ["elo_joueur", "elo_adverse", "gaffes_joueur"]
+COLONNES_REQUISES = [
+    "partie_id",
+    "date_jeu",
+    "resultat",
+    "cadence",
+    "couleur",
+    "ouverture_famille",
+    *COLONNES_NUMERIQUES,
+]
 
 
 def valider(df: pd.DataFrame) -> pd.DataFrame:
@@ -19,7 +31,35 @@ def valider(df: pd.DataFrame) -> pd.DataFrame:
     Colonnes absentes, colonnes entièrement vides, nombres lus comme du texte,
     identifiant de partie en double, résultat inconnu.
     """
-    raise NotImplementedError("TODO exo 1")
+    absentes = [colonne for colonne in COLONNES_REQUISES if colonne not in df]
+    if absentes:
+        raise ValueError(f"Colonnes absentes dans parties.csv : {', '.join(absentes)}")
+
+    vides = [
+        colonne
+        for colonne in COLONNES_REQUISES
+        if colonne != "cadence" and df[colonne].isna().all()
+    ]
+    if vides:
+        raise ValueError(f"Colonnes entièrement vides dans parties.csv : {', '.join(vides)}")
+
+    non_numeriques = [
+        colonne for colonne in COLONNES_NUMERIQUES if not pd.api.types.is_numeric_dtype(df[colonne])
+    ]
+    if non_numeriques:
+        raise ValueError(f"Colonnes non numériques dans parties.csv : {', '.join(non_numeriques)}")
+
+    identifiants = df["partie_id"]
+    if identifiants.isna().any() or not identifiants.is_unique:
+        raise ValueError("Identifiant de partie manquant ou en double dans parties.csv.")
+
+    inconnus = df.loc[~df["resultat"].isin(RESULTATS), "resultat"]
+    if not inconnus.empty:
+        raise ValueError(
+            f"Résultat inconnu ou manquant dans parties.csv : {inconnus.unique().tolist()}"
+        )
+
+    return df
 
 
 def load_data() -> pd.DataFrame:
@@ -32,12 +72,24 @@ def load_data() -> pd.DataFrame:
     resultat (victoire, nulle, défaite), score, annee, heure (UTC), ecart_elo
     (Elo de l'adversaire moins le mien), cadence.
     """
-    raise NotImplementedError("TODO exo 1")
+    df = valider(pd.read_csv(DATA / "parties.csv"))
+    dates = pd.to_datetime(df["date_jeu"], errors="coerce", utc=True)
+    if dates.isna().any():
+        raise ValueError("Date de jeu invalide ou manquante dans parties.csv.")
+
+    df["date_jeu"] = dates
+    df["resultat"] = df["resultat"].map(RESULTATS)
+    df["score"] = df["resultat"].map(SCORES)
+    df["annee"] = dates.dt.year
+    df["heure"] = dates.dt.hour
+    df["ecart_elo"] = df["elo_adverse"] - df["elo_joueur"]
+    df["cadence"] = df["cadence"].fillna("aucune")
+    return df
 
 
 def load_coups() -> pd.DataFrame:
     """Un de mes coups jugés mauvais par ligne (data/echecs/coups_juges.csv)."""
-    raise NotImplementedError("TODO exo 1")
+    return pd.read_csv(DATA / "coups_juges.csv")
 
 
 def familles(df: pd.DataFrame, min_n: int = 30) -> pd.DataFrame:
@@ -46,7 +98,13 @@ def familles(df: pd.DataFrame, min_n: int = 30) -> pd.DataFrame:
     Colonnes : famille, n (parties), score, gaffes (par partie).
     Sous min_n parties le chiffre ne dit rien : écartez la famille.
     """
-    raise NotImplementedError("TODO exo 1")
+    stats = df.groupby("ouverture_famille", as_index=False).agg(
+        n=("partie_id", "size"),
+        score=("score", "mean"),
+        gaffes=("gaffes_joueur", "mean"),
+    )
+    stats = stats.rename(columns={"ouverture_famille": "famille"})
+    return stats.loc[stats["n"] >= min_n].sort_values("score", ignore_index=True)
 
 
 if __name__ == "__main__":
