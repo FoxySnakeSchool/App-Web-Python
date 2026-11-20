@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "phares": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "projet.mcp_server"]
+    }
+  }
+}
