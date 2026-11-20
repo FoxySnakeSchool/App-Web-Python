@@ -7,7 +7,7 @@ de nouvelles maisons pour voir ce que chacune rapporte, seule et avec les autres
 
 - **Pour** : un élu ou un chargé de planification, qui doit décider dans quelles communes soutenir
   l'ouverture de maisons de santé.
-- **URL** : https://1bc2fd4d-0b53-4597-a66c-454a659df726.plotly.app (Plotly Cloud). La première
+- **URL** : https://phares.plotly.app (Plotly Cloud). La première
   version du projet est gardée dans `projet_0/`.
 
 ## Mettre en ligne (Plotly Cloud)
